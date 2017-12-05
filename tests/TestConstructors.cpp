@@ -7,7 +7,7 @@
 
 TEST(Constructors, Default)
 {
-    ringbuffer<int> object;
+    ringbuffer<uint32_t> object;
 
     ASSERT_TRUE(object.empty());
     ASSERT_EQ(object.capacity(), 0);
@@ -15,73 +15,73 @@ TEST(Constructors, Default)
 
 TEST(Constructors, Fill)
 {
-    constexpr int count = 1024;
+    constexpr uint32_t count = 1024;
 
-    ringbuffer<int> object(count, 0xDEADBEEF);
+    ringbuffer<uint32_t> object(count, 0xDEADBEEF);
 
     ASSERT_EQ(object.capacity(), count);
 
-    for (int i = 0; i < count; ++i)
+    for (uint32_t i = 0; i < count; ++i)
     {
-        ASSERT_EQ(object.data()[i], 0xDEADBEEF);
+        ASSERT_EQ(object[i], 0xDEADBEEF);
     }
 }
 
 TEST(Constructors, Range)
 {
-    std::vector<int> data = {
+    std::vector<uint32_t> data = {
         1, 2, 3, 4, 5,
         5, 4, 3, 2, 1,
         1, 2, 3, 4, 5,
         5, 4, 3, 2, 1
     };
 
-    ringbuffer<int> object(data.begin(), data.end());
+    ringbuffer<uint32_t> object(data.begin(), data.end());
 
     ASSERT_EQ(data.size(), object.capacity());
 
     for (std::size_t i = 0; i < data.size(); ++i)
     {
-        ASSERT_EQ(object.data()[i], data.data()[i]);
+        ASSERT_EQ(object[i], data.data()[i]);
     }
 }
 
 TEST(Constructor, Copy)
 {
-    std::vector<int> data = {
+    std::vector<uint32_t> data = {
         1, 2, 3, 4, 5,
         5, 4, 3, 2, 1,
         1, 2, 3, 4, 5,
         5, 4, 3, 2, 1
     };
 
-    ringbuffer<int> object(data.begin(), data.end());
+    ringbuffer<uint32_t> object(data.begin(), data.end());
 
     ASSERT_EQ(data.size(), object.capacity());
 
     for (std::size_t i = 0; i < data.size(); ++i)
     {
-        ASSERT_EQ(object.data()[i], data.data()[i]);
+        ASSERT_EQ(object[i], data.data()[i]);
     }
 
-    ringbuffer<int> object_2 = object;
+    ringbuffer<uint32_t> object_2 = object;
 
     ASSERT_EQ(data.size(), object_2.capacity());
 
     for (std::size_t i = 0; i < data.size(); ++i)
     {
-        ASSERT_EQ(object_2.data()[i], object.data()[i]);
+        ASSERT_EQ(object_2[i], object[i]);
     }
 }
 
 TEST(Constructor, InitializerList)
 {
-    ringbuffer<int> buffer = {
+    ringbuffer<uint32_t> buffer = {
         1, 2, 3, 4, 5,
         5, 4, 3, 2, 1
     };
 
-    std::vector<int> buffer_2 = {
+    std::vector<uint32_t> buffer_2 = {
         1, 2, 3, 4, 5,
         5, 4, 3, 2, 1
     };
@@ -90,21 +90,21 @@ TEST(Constructor, InitializerList)
 
     for (std::size_t index = 0; index < buffer_2.size(); ++index)
     {
-        ASSERT_EQ(buffer.data()[index], buffer_2.data()[index]);
+        ASSERT_EQ(buffer[index], buffer_2[index]);
     }
 }
 
 TEST(Constructor, Move)
 {
-    ringbuffer<int> result;
+    ringbuffer<uint32_t> result;
 
-    std::vector<int> buffer_2 = {
+    std::vector<uint32_t> buffer_2 = {
         1, 2, 3, 4, 5,
         5, 4, 3, 2, 1
     };
 
     {
-        ringbuffer<int> buffer = {
+        ringbuffer<uint32_t> buffer = {
             1, 2, 3, 4, 5,
             5, 4, 3, 2, 1
         };
@@ -116,20 +116,20 @@ TEST(Constructor, Move)
 
     for (std::size_t index = 0; index < buffer_2.size(); ++index)
     {
-        ASSERT_EQ(result.data()[index], buffer_2.data()[index]);
+        ASSERT_EQ(result[index], buffer_2[index]);
     }
 }
 
 TEST(Constructor, CopyOperator)
 {
-    ringbuffer<int> result;
+    ringbuffer<uint32_t> result;
 
-    std::vector<int> buffer = {
+    std::vector<uint32_t> buffer = {
         1, 2, 3, 4, 5,
         5, 4, 3, 2, 1
     };
 
-    ringbuffer<int> source(buffer.begin(), buffer.end());
+    ringbuffer<uint32_t> source(buffer.begin(), buffer.end());
 
     result = source;
 
@@ -137,6 +137,6 @@ TEST(Constructor, CopyOperator)
 
     for (std::size_t index = 0; index < buffer.size(); ++index)
     {
-        ASSERT_EQ(result.data()[index], buffer.data()[index]);
+        ASSERT_EQ(result[index], buffer[index]);
     }
 }

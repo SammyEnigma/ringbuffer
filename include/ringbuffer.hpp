@@ -7,6 +7,9 @@
 #include <cstdlib>
 #include <memory>
 #include <limits>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
 
 template< typename T, typename Allocator = std::allocator< T > >
 class ringbuffer
@@ -38,12 +41,11 @@ public:
         explicit iterator(T* val,
                           size_type begin,
                           size_type capacity,
-                          bool isEmpty) :
+                          size_type fromBegin) :
             m_buffer(val),
             m_currentPos(begin),
             m_capacity(capacity),
-            m_traverseCount(0),
-            m_empty(isEmpty),
+            m_traverseCount(fromBegin),
             m_reverse(false)
         {
 
@@ -122,14 +124,7 @@ public:
 
             if (equality)
             {
-                if (m_empty && other.m_empty)
-                {
-                    return true;
-                }
-                else
-                {
-                    return m_traverseCount != other.m_traverseCount;
-                }
+                return m_traverseCount == other.m_traverseCount;
             }
             else
             {
@@ -157,7 +152,6 @@ public:
         size_type m_currentPos;
         size_type m_capacity;
         size_type m_traverseCount;
-        bool m_empty;
         bool m_reverse;
     };
 
@@ -354,10 +348,10 @@ public:
      */
     iterator begin()
     {
-        return iterator(m_buffer + m_beginPosition,
+        return iterator(m_buffer,
                         m_beginPosition,
                         m_capacity,
-                        empty());
+                        0);
     }
 
     /**
@@ -377,10 +371,10 @@ public:
      */
     const_iterator cbegin() const
     {
-        return const_iterator(m_buffer + m_beginPosition,
+        return const_iterator(m_buffer,
                               m_beginPosition,
                               m_capacity,
-                              empty());
+                              0);
     }
 
     /**
@@ -390,10 +384,15 @@ public:
      */
     iterator end()
     {
-        return iterator(m_buffer + m_beginPosition,
+        if (m_capacity == 0)
+        {
+            return iterator(nullptr, 0, 0, 0);
+        }
+
+        return iterator(m_buffer,
                         m_insertPosition % m_capacity,
                         m_capacity,
-                        empty());
+                        m_length);
     }
 
     /**
@@ -413,10 +412,10 @@ public:
      */
     const_iterator cend() const
     {
-        return const_iterator(m_buffer + m_beginPosition,
+        return const_iterator(m_buffer,
                               m_insertPosition,
                               m_capacity,
-                              empty());
+                              m_length);
     }
 
     /**
@@ -519,13 +518,11 @@ public:
 
             size_type i = 0;
             for (auto&& el : *this)
+//            for (auto iterator = begin(); iterator != end(); ++iterator)
             {
+//                std::cout << "i#" << i << " -> " << *iterator << std::endl;
+//                m_allocator.construct(&newBuffer[i++], *iterator);
                 m_allocator.construct(&newBuffer[i++], el);
-            }
-
-            for (; i < n; ++i)
-            {
-                m_allocator.construct(&newBuffer[i++], val);
             }
 
             // Deleting elements
@@ -543,18 +540,17 @@ public:
 
             m_buffer = newBuffer;
             m_capacity = n;
+            m_insertPosition = m_length;
+            m_beginPosition = 0;
         }
-        else
+
+        for (size_type i = m_length; i < n; ++i)
         {
-            if (n > m_length)
-            {
-                m_insertPosition = inc_index(m_insertPosition, n - m_length);
-            }
-            else if (n < m_length)
-            {
-                m_insertPosition = dec_index(m_insertPosition, m_length - n);
-            }
+            m_allocator.construct(&m_buffer[m_insertPosition], val);
+            m_insertPosition = inc_index(m_insertPosition);
         }
+
+        m_length = n;
     }
 
     size_type capacity() const
@@ -587,6 +583,8 @@ public:
 
         m_buffer = newBuffer;
         m_capacity = n;
+        m_beginPosition = 0;
+        m_insertPosition = 0;
     }
 
     reference front()
@@ -649,7 +647,7 @@ public:
     template<class InputIterator, typename = std::_RequireInputIter<InputIterator>>
     void assign(InputIterator first, InputIterator last)
     {
-        auto requiredElements = std::distance(first, last);
+        size_type requiredElements = static_cast<size_type>(std::distance(first, last));
 
         // Reallocation
         if (requiredElements > m_capacity)
@@ -688,6 +686,9 @@ public:
         {
             m_allocator.construct(&m_buffer[i], *first);
         }
+
+        m_length = requiredElements;
+        m_insertPosition = inc_index(0, requiredElements);
     };
 
     /**
@@ -734,6 +735,9 @@ public:
         {
             m_allocator.construct(&m_buffer[i], val);
         }
+
+        m_length = n;
+        m_insertPosition = inc_index(0, n);
     }
 
     void assign(std::initializer_list<value_type> initializer_list)
@@ -741,7 +745,7 @@ public:
         // Reallocation
         if (initializer_list.size() > m_capacity)
         {
-            auto newBuffer = m_allocator.allocate(n);
+            auto newBuffer = m_allocator.allocate(initializer_list.size());
 
             // Deleting elements
             if (m_buffer)
@@ -774,6 +778,9 @@ public:
         {
             m_allocator.construct(&m_buffer[i++], val);
         }
+
+        m_length = initializer_list.size();
+        m_insertPosition = inc_index(0, initializer_list.size());
     }
 
     template<class... Args>
@@ -796,9 +803,10 @@ public:
             throw std::overflow_error("No space left in buffer.");
         }
 
-        m_allocator.allocate(&m_buffer[m_insertPosition], value);
+        m_allocator.construct(&m_buffer[m_insertPosition], value);
 
         m_insertPosition = inc_index(m_insertPosition);
+        m_length++;
     }
 
     void pop_back()
@@ -811,9 +819,21 @@ public:
         m_insertPosition = dec_index(m_insertPosition);
 
         m_allocator.destroy(&m_buffer[m_insertPosition]);
+        --m_length;
     }
 
+    void pop_front()
+    {
+        if (empty())
+        {
+            throw std::overflow_error("There is no elements.");
+        }
 
+        m_allocator.destroy(&m_buffer[m_beginPosition]);
+
+        m_beginPosition = inc_index(m_beginPosition);
+        --m_length;
+    }
 
 //    template<typename InputIterator>
 //    void assign(InputIterator first, InputIterator last);
@@ -823,14 +843,18 @@ public:
         return m_allocator;
     }
 
-    value_type* data()
+    std::string debug() const
     {
-        return m_buffer;
-    }
+        std::stringstream ss;
 
-    const value_type* data() const
-    {
-        return m_buffer;
+        ss << '[';
+        for (size_type i = 0; i < m_capacity; ++i)
+        {
+            ss << std::setw(3) << m_buffer[i] << ',';
+        }
+        ss << ']';
+
+        return ss.str();
     }
 
 private:

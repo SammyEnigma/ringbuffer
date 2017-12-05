@@ -99,3 +99,101 @@ TEST(Iterators, ReverseExplicitConstBeginEnd)
     }
 }
 
+TEST(Iterators, BeginEndNotFull)
+{
+    ringbuffer<int> object(dataSource.size() + 10);
+    object.assign(dataSource.begin(), dataSource.end());
+
+    auto begin = object.begin();
+    auto end = object.end();
+
+    for (auto sourceBegin = dataSource.begin();
+         sourceBegin != dataSource.end();
+         ++sourceBegin, ++begin)
+    {
+        ASSERT_EQ(*sourceBegin, *begin);
+    }
+}
+
+TEST(Iterators, ConstBeginEndNotFull)
+{
+    ringbuffer<int> object(dataSource.size() + 10);
+    object.assign(dataSource.begin(), dataSource.end());
+
+    auto begin = object.begin();
+    auto end = object.end();
+
+    for (auto sourceBegin = dataSource.begin();
+         sourceBegin != dataSource.end();
+         ++sourceBegin, ++begin)
+    {
+        ASSERT_EQ(*sourceBegin, *begin);
+    }
+}
+
+TEST(Iterators, ExplicitConstBeginEndNotFull)
+{
+    ringbuffer<int> object(dataSource.size() + 10);
+    object.assign(dataSource.begin(), dataSource.end());
+
+    auto begin = object.cbegin();
+    auto end = object.cend();
+
+    for (auto sourceBegin = dataSource.begin();
+         sourceBegin != dataSource.end();
+         ++sourceBegin, ++begin)
+    {
+        ASSERT_EQ(*sourceBegin, *begin);
+    }
+}
+
+TEST(Iterators, ReverseBeginEndNotFull)
+{
+    ringbuffer<int> object;
+    object.reserve(dataSource.size() + 10);
+    object.assign(dataSource.begin(), dataSource.end());
+
+    auto begin = object.rbegin();
+    auto end = object.rend();
+
+    for (auto sourceBegin = dataSource.rbegin();
+         sourceBegin != dataSource.rend();
+         ++sourceBegin, ++begin)
+    {
+        ASSERT_EQ(*sourceBegin, *begin);
+    }
+}
+
+TEST(Iterators, ReverseConstBeginEndNotFull)
+{
+    ringbuffer<int> object;
+    object.reserve(dataSource.size() + 10);
+    object.assign(dataSource.begin(), dataSource.end());
+
+    auto begin = object.rbegin();
+    auto end = object.rend();
+
+    for (auto sourceBegin = dataSource.rbegin();
+         sourceBegin != dataSource.rend();
+         ++sourceBegin, ++begin)
+    {
+        ASSERT_EQ(*sourceBegin, *begin);
+    }
+}
+
+TEST(Iterators, ReverseExplicitConstBeginEndNotFull)
+{
+    ringbuffer<uint32_t> object;
+    object.reserve(dataSource.size() + 10);
+    object.assign(dataSource.begin(), dataSource.end());
+
+    auto begin = object.crbegin();
+    auto end = object.crend();
+
+    for (auto sourceBegin = dataSource.crbegin();
+         sourceBegin != dataSource.crend();
+         ++sourceBegin, ++begin)
+    {
+        ASSERT_EQ(*sourceBegin, *begin);
+    }
+}

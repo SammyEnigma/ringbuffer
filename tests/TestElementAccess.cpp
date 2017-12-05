@@ -5,30 +5,30 @@
 #include <gtest/gtest.h>
 #include <ringbuffer.hpp>
 
-static std::vector<int> dataSource = {
+static std::vector<uint32_t> dataSource = {
     1,  2,  3,  4,  5,  6,  7,
     8,  9, 10, 11, 12, 13, 14
 };
 
 TEST(ElementAccess, Front)
 {
-    ringbuffer<int> object(dataSource.begin(), dataSource.end());
+    ringbuffer<uint32_t> object(dataSource.begin(), dataSource.end());
 
     ASSERT_EQ(object.front(), dataSource[0]);
 }
 
 TEST(ElementAccess, Back)
 {
-    ringbuffer<int> object(dataSource.begin(), dataSource.end());
+    ringbuffer<uint32_t> object(dataSource.begin(), dataSource.end());
 
     ASSERT_EQ(object.back(), dataSource[dataSource.size() - 1]);
 }
 
 TEST(ElementAccess, Operator)
 {
-    ringbuffer<int> object(dataSource.begin(), dataSource.end());
+    ringbuffer<uint32_t> object(dataSource.begin(), dataSource.end());
 
-    for (ringbuffer<int>::size_type i = 0; i < object.size(); ++i)
+    for (ringbuffer<uint32_t>::size_type i = 0; i < object.size(); ++i)
     {
         ASSERT_EQ(dataSource[i], object[i]);
     }
@@ -36,9 +36,9 @@ TEST(ElementAccess, Operator)
 
 TEST(ElementAccess, At)
 {
-    ringbuffer<int> object(dataSource.begin(), dataSource.end());
+    ringbuffer<uint32_t> object(dataSource.begin(), dataSource.end());
 
-    for (ringbuffer<int>::size_type i = 0; i < object.size(); ++i)
+    for (ringbuffer<uint32_t>::size_type i = 0; i < object.size(); ++i)
     {
         ASSERT_EQ(dataSource[i], object.at(i));
     }
@@ -46,7 +46,7 @@ TEST(ElementAccess, At)
 
 TEST(ElementAccess, AtException)
 {
-    ringbuffer<int> object(dataSource.begin(), dataSource.end());
+    ringbuffer<uint32_t> object(dataSource.begin(), dataSource.end());
 
 //    try
 //    {
@@ -65,14 +65,14 @@ TEST(ElementAccess, AtException)
 
 TEST(ElementAccess, ConstFront)
 {
-    const ringbuffer<int> object(dataSource.begin(), dataSource.end());
+    const ringbuffer<uint32_t> object(dataSource.begin(), dataSource.end());
 
     ASSERT_EQ(object.front(), dataSource[0]);
 }
 
 TEST(ElementAccess, ConstBack)
 {
-    const ringbuffer<int> object(dataSource.begin(), dataSource.end());
+    const ringbuffer<uint32_t> object(dataSource.begin(), dataSource.end());
 
     ASSERT_EQ(object.back(), dataSource[dataSource.size() - 1]);
 }
@@ -81,9 +81,9 @@ TEST(ElementAccess, ConstBack)
 
 TEST(ElementAccess, ConstOperator)
 {
-    const ringbuffer<int> object(dataSource.begin(), dataSource.end());
+    const ringbuffer<uint32_t> object(dataSource.begin(), dataSource.end());
 
-    for (ringbuffer<int>::size_type i = 0; i < object.size(); ++i)
+    for (ringbuffer<uint32_t>::size_type i = 0; i < object.size(); ++i)
     {
         ASSERT_EQ(dataSource[i], object[i]);
     }
@@ -91,9 +91,9 @@ TEST(ElementAccess, ConstOperator)
 
 TEST(ElementAccess, ConstAt)
 {
-    const ringbuffer<int> object(dataSource.begin(), dataSource.end());
+    const ringbuffer<uint32_t> object(dataSource.begin(), dataSource.end());
 
-    for (ringbuffer<int>::size_type i = 0; i < object.size(); ++i)
+    for (ringbuffer<uint32_t>::size_type i = 0; i < object.size(); ++i)
     {
         ASSERT_EQ(dataSource[i], object.at(i));
     }
@@ -101,7 +101,7 @@ TEST(ElementAccess, ConstAt)
 
 TEST(ElementAccess, ConstAtException)
 {
-    const ringbuffer<int> object(dataSource.begin(), dataSource.end());
+    const ringbuffer<uint32_t> object(dataSource.begin(), dataSource.end());
 
     ASSERT_THROW(
         object.at(object.size()),
