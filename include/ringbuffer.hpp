@@ -197,7 +197,6 @@ public:
         for (size_type i = 0; i < n; ++i)
         {
             m_allocator.construct(&m_buffer[i], val);
-//            m_buffer[i] = *first;
         }
     }
 
@@ -518,10 +517,7 @@ public:
 
             size_type i = 0;
             for (auto&& el : *this)
-//            for (auto iterator = begin(); iterator != end(); ++iterator)
             {
-//                std::cout << "i#" << i << " -> " << *iterator << std::endl;
-//                m_allocator.construct(&newBuffer[i++], *iterator);
                 m_allocator.construct(&newBuffer[i++], el);
             }
 
@@ -740,6 +736,10 @@ public:
         m_insertPosition = inc_index(0, n);
     }
 
+    /**
+     * @brief Initializer assign method.
+     * @param initializer_list Initializer list.
+     */
     void assign(std::initializer_list<value_type> initializer_list)
     {
         // Reallocation
@@ -783,13 +783,6 @@ public:
         m_insertPosition = inc_index(0, initializer_list.size());
     }
 
-    template<class... Args>
-    iterator emplace (const_iterator position, Args&&... args)
-    {
-        
-    }
-
-
     /**
      * @brief Method for pushing back element.
      * If not enough space left, std::overflow_error
@@ -809,6 +802,9 @@ public:
         m_length++;
     }
 
+    /**
+     * @brief Method for popping element from back.
+     */
     void pop_back()
     {
         if (empty())
@@ -822,6 +818,9 @@ public:
         --m_length;
     }
 
+    /**
+     * @brief Method for popping element from front.
+     */
     void pop_front()
     {
         if (empty())
@@ -835,26 +834,13 @@ public:
         --m_length;
     }
 
-//    template<typename InputIterator>
-//    void assign(InputIterator first, InputIterator last);
-
+    /**
+     * @brief Observer for allocator.
+     * @return Allocator.
+     */
     allocator_type get_allocator() const noexcept
     {
         return m_allocator;
-    }
-
-    std::string debug() const
-    {
-        std::stringstream ss;
-
-        ss << '[';
-        for (size_type i = 0; i < m_capacity; ++i)
-        {
-            ss << std::setw(3) << m_buffer[i] << ',';
-        }
-        ss << ']';
-
-        return ss.str();
     }
 
 private:

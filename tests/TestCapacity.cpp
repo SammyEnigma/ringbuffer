@@ -208,8 +208,6 @@ TEST(Capacity, ResizeBiggerRounded)
     }
 }
 
-// todo: Add more tests for resize method
-
 TEST(Capacity, CapacityRounded)
 {
     ringbuffer<uint32_t> object(dataSource.begin(), dataSource.end());

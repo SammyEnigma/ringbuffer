@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.7)
 project(STLRoundBuffer)
 
 option(STLROUNDBUFFER_BUILD_TESTS "Build tests" OFF)
@@ -9,4 +9,6 @@ if (${STLROUNDBUFFER_BUILD_TESTS})
     add_subdirectory(tests)
 endif()
 
-add_library(STLRoundBuffer src/ringbuffer.cpp include/ringbuffer.hpp)
+add_library(STLRoundBuffer include/ringbuffer.hpp)
+
+set_target_properties(STLRoundBuffer PROPERTIES LINKER_LANGUAGE CXX)
