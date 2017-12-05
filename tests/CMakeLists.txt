@@ -10,6 +10,6 @@ add_executable(STLRoundBufferTests
         main.cpp
         TestConstructors.cpp
         TestIterators.cpp
-        TestCapacity.cpp TestElementAccess.cpp TestModifiers.cpp)
+        TestCapacity.cpp TestElementAccess.cpp TestModifiers.cpp TestUsecase.cpp TestSTLAlgo.cpp TestingExtend.hpp)
 
 target_link_libraries(STLRoundBufferTests STLRoundBuffer gtest)

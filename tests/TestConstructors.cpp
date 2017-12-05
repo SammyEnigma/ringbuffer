@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 #include <ringbuffer.hpp>
 
-TEST(Constructors, Default)
+TEST(Constructor, Default)
 {
     ringbuffer<uint32_t> object;
 
@@ -13,7 +13,7 @@ TEST(Constructors, Default)
     ASSERT_EQ(object.capacity(), 0);
 }
 
-TEST(Constructors, Fill)
+TEST(Constructor, Fill)
 {
     constexpr uint32_t count = 1024;
 
@@ -27,7 +27,7 @@ TEST(Constructors, Fill)
     }
 }
 
-TEST(Constructors, Range)
+TEST(Constructor, Range)
 {
     std::vector<uint32_t> data = {
         1, 2, 3, 4, 5,
