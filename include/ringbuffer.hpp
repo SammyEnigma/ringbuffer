@@ -78,6 +78,67 @@ public:
             return *this;
         }
 
+        iterator operator+(size_type val)
+        {
+            iterator copy = *this;
+
+            // Changing traverse count
+            if (!copy.m_reverse)
+            {
+                copy.m_traverseCount += val;
+            }
+            else
+            {
+                if (copy.m_traverseCount > val)
+                {
+                    copy.m_traverseCount -= val;
+                }
+                else
+                {
+                    copy.m_traverseCount = val - copy.m_traverseCount;
+                    copy.m_reverse = false;
+                }
+            }
+
+
+            copy.m_currentPos = (copy.m_currentPos + val) % m_capacity;
+
+            return copy;
+        }
+
+        iterator operator-(size_type val)
+        {
+            iterator copy = *this;
+
+            if (copy.m_reverse)
+            {
+                copy.m_traverseCount += val;
+            }
+            else
+            {
+                if (copy.m_traverseCount > val)
+                {
+                    copy.m_traverseCount -= val;
+                }
+                else
+                {
+                    copy.m_traverseCount = val - copy.m_traverseCount;
+                    copy.m_reverse = false;
+                }
+            }
+
+            if (val > copy.m_currentPos)
+            {
+                copy.m_currentPos = m_capacity - (val - copy.m_currentPos);
+            }
+            else
+            {
+                copy.m_currentPos = copy.m_currentPos - val;
+            }
+
+            return copy;
+        }
+
         iterator operator++(int)
         {
             iterator retval = *this;
@@ -683,7 +744,7 @@ public:
     template<class InputIterator, typename = std::_RequireInputIter<InputIterator>>
     void assign(InputIterator first, InputIterator last)
     {
-        size_type requiredElements = static_cast<size_type>(std::distance(first, last));
+        auto requiredElements = static_cast<size_type>(std::distance(first, last));
 
         // Reallocation
         if (requiredElements > m_capacity)
@@ -725,7 +786,7 @@ public:
 
         m_length = requiredElements;
         m_insertPosition = inc_index(0, requiredElements);
-    };
+    }
 
     /**
      * @brief Fill assign method.
@@ -886,6 +947,42 @@ public:
 
         m_beginPosition = inc_index(m_beginPosition);
         --m_length;
+    }
+
+    /**
+     * @brief Method for popping several elements from front.
+     */
+    void pop_front(size_type count)
+    {
+        if (m_length < count)
+        {
+            throw std::overflow_error("Not enough elements.");
+        }
+
+        for (size_type i = 0; i < count; ++i)
+        {
+            m_allocator.destroy(&m_buffer[inc_index(m_beginPosition, i)]);
+        }
+
+        m_beginPosition = inc_index(m_beginPosition, count);
+        m_length -= count;
+    }
+
+    /**
+     * @brief Method for clearing
+     * container.
+     */
+    void clear()
+    {
+        // Destroying objects
+        for (size_type i = 0; i < m_length; ++i)
+        {
+            m_allocator.destroy(&m_buffer[inc_index(m_beginPosition, i)]);
+        }
+
+        m_beginPosition = 0;
+        m_insertPosition = 0;
+        m_length = 0;
     }
 
     /**
