@@ -37,6 +37,9 @@ public:
         reference                // Reference type
     >
     {
+        template<typename, typename>
+        friend class ringbuffer;
+
     public:
         explicit iterator(T* val,
                           size_type begin,
@@ -113,6 +116,41 @@ public:
             }
 
             return *this;
+        }
+
+        iterator& operator--(int)
+        {
+            iterator retval = *this;
+
+            --(*this);
+
+            return retval;
+        }
+
+        // todo: optimize this
+        iterator operator+(size_type value) const
+        {
+            iterator retval = *this;
+
+            for (size_type i = 0; i < value; ++i)
+            {
+                ++retval;
+            }
+
+            return retval;
+        }
+
+        // todo: optimize this
+        iterator operator-(size_type value) const
+        {
+            iterator retval = *this;
+
+            for (size_type i = 0; i < value; ++i)
+            {
+                --retval;
+            }
+
+            return retval;
         }
 
         bool operator==(iterator other) const
@@ -338,6 +376,8 @@ public:
 
             m_allocator.construct(&m_buffer[rounded_i], rhs.m_buffer[rounded_i]);
         }
+
+        return (*this);
     }
 
     /**
@@ -818,6 +858,20 @@ public:
         --m_length;
     }
 
+    template<typename... Args>
+    void emplace_back(Args&&... args)
+    {
+        if (m_length == m_capacity)
+        {
+            throw std::overflow_error("No space left in buffer.");
+        }
+
+        m_allocator.construct(&m_buffer[m_insertPosition], args...);
+
+        m_insertPosition = inc_index(m_insertPosition);
+        m_length++;
+    }
+
     /**
      * @brief Method for popping element from front.
      */
@@ -841,6 +895,43 @@ public:
     allocator_type get_allocator() const noexcept
     {
         return m_allocator;
+    }
+
+    /**
+     * @brief Method for removing one element.
+     * @param position Element position.
+     * @return
+     */
+    iterator erase(const_iterator position)
+    {
+        if (position.m_currentPos == 0)
+        {
+            pop_front();
+            return begin();
+        }
+
+        if (position.m_currentPos % m_length == m_length - 1)
+        {
+            pop_back();
+            return end();
+        }
+
+        // Erasing from middle
+        m_allocator.destroy(&m_buffer[position.m_currentPos]);
+
+        for (auto iterator = position,
+                  nextIterator = position + 1,
+                  endIterator = end();
+             nextIterator != endIterator;
+             ++iterator, ++nextIterator)
+        {
+            m_buffer[iterator.m_currentPos] = m_buffer[nextIterator.m_currentPos];
+        }
+
+        --m_length;
+        m_insertPosition = dec_index(m_insertPosition);
+
+        return begin() + position.m_traverseCount;
     }
 
 private:

@@ -64,3 +64,200 @@ TEST(Modifiers, AssignInitializerList)
 
 }
 
+TEST(Modifiers, PushBack)
+{
+    ringbuffer<uint32_t> object;
+    object.reserve(5);
+
+    ASSERT_NO_THROW(object.push_back(0));
+    ASSERT_NO_THROW(object.push_back(1));
+    ASSERT_NO_THROW(object.push_back(2));
+    ASSERT_NO_THROW(object.push_back(3));
+    ASSERT_NO_THROW(object.push_back(4));
+
+    ASSERT_THROW(
+        object.push_back(1),
+        std::overflow_error
+    );
+
+    for (uint32_t i = 0; i < 5; ++i)
+    {
+        ASSERT_EQ(object[i], i);
+    }
+}
+
+TEST(Modifiers, PushBackRounded)
+{
+    ringbuffer<uint32_t> object;
+    object.reserve(5);
+
+    ASSERT_NO_THROW(object.push_back(0));
+    ASSERT_NO_THROW(object.push_back(1));
+    object.pop_front();
+    object.pop_front();
+
+    ASSERT_NO_THROW(object.push_back(0));
+    ASSERT_NO_THROW(object.push_back(1));
+    ASSERT_NO_THROW(object.push_back(2));
+    ASSERT_NO_THROW(object.push_back(3));
+    ASSERT_NO_THROW(object.push_back(4));
+
+    ASSERT_THROW(
+        object.push_back(1),
+        std::overflow_error
+    );
+
+    for (uint32_t i = 0; i < 5; ++i)
+    {
+        ASSERT_EQ(object[i], i);
+    }
+}
+
+TEST(Modifiers, EmplaceBack)
+{
+    ringbuffer<uint32_t> object;
+    object.reserve(5);
+
+    ASSERT_NO_THROW(object.emplace_back(0));
+    ASSERT_NO_THROW(object.emplace_back(1));
+    ASSERT_NO_THROW(object.emplace_back(2));
+    ASSERT_NO_THROW(object.emplace_back(3));
+    ASSERT_NO_THROW(object.emplace_back(4));
+
+    ASSERT_THROW(
+        object.emplace_back(1),
+        std::overflow_error
+    );
+
+    for (uint32_t i = 0; i < 5; ++i)
+    {
+        ASSERT_EQ(object[i], i);
+    }
+}
+
+struct TestStruct
+{
+    TestStruct(uint32_t a, char b) :
+        a(a),
+        b(b)
+    {
+
+    }
+
+    uint32_t a;
+    char b;
+};
+
+TEST(Modifiers, EmplaceBackStruct)
+{
+    ringbuffer<TestStruct> object;
+    object.reserve(5);
+
+    ASSERT_NO_THROW(object.emplace_back(0, '\0'));
+    ASSERT_NO_THROW(object.emplace_back(1, '\1'));
+    ASSERT_NO_THROW(object.emplace_back(2, '\2'));
+    ASSERT_NO_THROW(object.emplace_back(3, '\3'));
+    ASSERT_NO_THROW(object.emplace_back(4, '\4'));
+
+    ASSERT_THROW(
+        object.emplace_back(1, '\1'),
+        std::overflow_error
+    );
+
+    for (uint32_t i = 0; i < 5; ++i)
+    {
+        ASSERT_EQ(object[i].a, i);
+        ASSERT_EQ(object[i].b, i);
+    }
+}
+
+TEST(Modifiers, EmplaceBackRounded)
+{
+    ringbuffer<uint32_t> object;
+    object.reserve(5);
+
+    ASSERT_NO_THROW(object.emplace_back(0));
+    ASSERT_NO_THROW(object.emplace_back(1));
+    object.pop_front();
+    object.pop_front();
+
+    ASSERT_NO_THROW(object.emplace_back(0));
+    ASSERT_NO_THROW(object.emplace_back(1));
+    ASSERT_NO_THROW(object.emplace_back(2));
+    ASSERT_NO_THROW(object.emplace_back(3));
+    ASSERT_NO_THROW(object.emplace_back(4));
+
+    ASSERT_THROW(
+        object.emplace_back(1),
+        std::overflow_error
+    );
+
+    for (uint32_t i = 0; i < 5; ++i)
+    {
+        ASSERT_EQ(object[i], i);
+    }
+}
+
+TEST(Modifiers, EraseBegin)
+{
+    ringbuffer<uint32_t> object;
+    object.reserve(5);
+
+    object.push_back(0);
+    object.push_back(1);
+    object.push_back(2);
+    object.push_back(3);
+
+    // Equal to pop_front
+    auto result = object.erase(object.begin());
+
+    ASSERT_EQ(object.size(), 3);
+    ASSERT_EQ(result, object.begin());
+
+    ASSERT_EQ(object[0], 1);
+    ASSERT_EQ(object[1], 2);
+    ASSERT_EQ(object[2], 3);
+}
+
+TEST(Modifiers, EraseEnd)
+{
+    ringbuffer<uint32_t> object;
+    object.reserve(5);
+
+    object.push_back(0);
+    object.push_back(1);
+    object.push_back(2);
+    object.push_back(3);
+
+    // Equal to pop_front
+    auto result = object.erase(object.end() - 1);
+
+    ASSERT_EQ(object.size(), 3);
+    ASSERT_EQ(result, object.end());
+
+    ASSERT_EQ(object[0], 0);
+    ASSERT_EQ(object[1], 1);
+    ASSERT_EQ(object[2], 2);
+}
+
+TEST(Modifiers, EraseMiddle)
+{
+    ringbuffer<uint32_t> object;
+    object.reserve(5);
+
+    object.push_back(0);
+    object.push_back(1);
+    object.push_back(2);
+    object.push_back(3);
+    object.push_back(4);
+
+    auto result = object.erase(object.begin() + 2); // Remove value `2`
+
+    ASSERT_EQ(object.size(), 4);
+    ASSERT_EQ(result, object.begin() + 2);
+
+    ASSERT_EQ(object[0], 0);
+    ASSERT_EQ(object[1], 1);
+    ASSERT_EQ(object[2], 3);
+    ASSERT_EQ(object[3], 4);
+}
