@@ -11,9 +11,18 @@
 #include <iostream>
 #include <iomanip>
 
-template< typename T, typename Allocator = std::allocator< T > >
+/**
+ * @brief Class, that describes classic ringbuffer
+ * data structure.
+ * @tparam T Value type.
+ * @tparam Size Ringbuffer size.
+ */
+template< typename T, std::size_t Size>
 class ringbuffer
 {
+
+    static_assert(Size > 0, "Empty ringbuffer is not allowed.");
+
 public:
 
     using value_type = T;
@@ -23,8 +32,6 @@ public:
     using const_reference = const T&;
 
     using size_type = std::size_t;
-
-    using allocator_type = Allocator;
 
     /**
      * @brief Iterator type.
@@ -37,17 +44,15 @@ public:
         reference                // Reference type
     >
     {
-        template<typename, typename>
+        template<typename, std::size_t>
         friend class ringbuffer;
 
     public:
         explicit iterator(T* val,
                           size_type begin,
-                          size_type capacity,
                           size_type fromBegin) :
             m_buffer(val),
             m_currentPos(begin),
-            m_capacity(capacity),
             m_traverseCount(fromBegin),
             m_reverse(false)
         {
@@ -56,7 +61,7 @@ public:
 
         iterator& operator++()
         {
-            m_currentPos = (m_currentPos + 1) % m_capacity;
+            m_currentPos = (m_currentPos + 1) % Size;
 
             if (m_traverseCount == 0)
             {
@@ -101,7 +106,7 @@ public:
             }
 
 
-            copy.m_currentPos = (copy.m_currentPos + val) % m_capacity;
+            copy.m_currentPos = (copy.m_currentPos + val) % Size;
 
             return copy;
         }
@@ -129,7 +134,7 @@ public:
 
             if (val > copy.m_currentPos)
             {
-                copy.m_currentPos = m_capacity - (val - copy.m_currentPos);
+                copy.m_currentPos = Size - (val - copy.m_currentPos);
             }
             else
             {
@@ -152,7 +157,7 @@ public:
         {
             if (m_currentPos == 0)
             {
-                m_currentPos = m_capacity - 1;
+                m_currentPos = Size - 1;
             }
             else
             {
@@ -218,8 +223,7 @@ public:
         {
             auto equality =
                    m_buffer == other.m_buffer &&
-                   m_currentPos == other.m_currentPos &&
-                   m_capacity == other.m_capacity;
+                   m_currentPos == other.m_currentPos;
 
             if (equality)
             {
@@ -249,7 +253,6 @@ public:
     private:
         value_type* m_buffer;
         size_type m_currentPos;
-        size_type m_capacity;
         size_type m_traverseCount;
         bool m_reverse;
     };
@@ -262,13 +265,9 @@ public:
 
     /**
      * @brief Default constructor.
-     * Does not allocate any heap memory.
-     * @param alloc Allocator.
      */
-    explicit ringbuffer(const allocator_type &alloc = allocator_type()) :
-        m_allocator(alloc),
-        m_buffer(nullptr),
-        m_capacity(0),
+    ringbuffer() :
+        m_buffer(),
         m_length(0),
         m_insertPosition(0),
         m_beginPosition(0)
@@ -279,23 +278,23 @@ public:
     /**
      * @brief Fill constructor. Creates ringbuffer,
      * filled with val values.
+     * @todo Make `val` param copyable to allow std::move usage from above.
      * @param n Number of elements (and capacity)
      * @param val Fill element value.
      * @param alloc Allocator.
      */
     explicit ringbuffer(size_type n,
-                        const value_type& val = value_type(),
-                        const allocator_type& alloc = allocator_type()) :
-        m_allocator(alloc),
-        m_buffer(m_allocator.allocate(n)),
-        m_capacity(n),
+                        const value_type& val = value_type()) :
+        m_buffer(),
         m_length(n),
         m_insertPosition(0),
         m_beginPosition(0)
     {
-        for (size_type i = 0; i < n; ++i)
+        auto* pointer = m_buffer;
+
+        for (int i = 0; i < n; ++i)
         {
-            m_allocator.construct(&m_buffer[i], val);
+            (*pointer++) = val;
         }
     }
 
@@ -310,19 +309,15 @@ public:
      */
     template<typename InputIterator, typename = std::_RequireInputIter<InputIterator>>
      ringbuffer(InputIterator first,
-               InputIterator last,
-               const allocator_type& alloc = allocator_type()) :
-        m_allocator(alloc),
-        m_buffer(m_allocator.allocate(std::distance(first, last))),
-        m_capacity(static_cast<size_type>(std::distance(first, last))),
-        m_length(m_capacity),
+                InputIterator last) :
+        m_buffer(),
+        m_length(static_cast<size_type>(std::distance(first, last))),
         m_insertPosition(0),
         m_beginPosition(0)
     {
-        for (size_type i = 0; first != last; ++first, ++i)
+        for (auto* pointer = m_buffer; first != last; ++first)
         {
-            m_allocator.construct(&m_buffer[i], *first);
-//            m_buffer[i] = *first;
+            (*pointer++) = *first;
         }
     }
 
@@ -331,15 +326,17 @@ public:
      * @param x Rhs.
      */
     ringbuffer(ringbuffer&& x) noexcept :
-        m_allocator(std::move(x.m_allocator)),
-        m_buffer(std::move(x.m_buffer)),
-        m_capacity(std::move(x.m_capacity)),
+        m_buffer(),
         m_length(std::move(x.m_length)),
         m_insertPosition(std::move(x.m_insertPosition)),
         m_beginPosition(std::move(x.m_beginPosition))
     {
-        x.m_buffer = nullptr;
-        x.m_capacity = 0;
+        auto* pointer = m_buffer;
+        for (auto&& val : x.m_buffer)
+        {
+            (*pointer++) = std::move(val);
+        }
+
         x.m_length = 0;
         x.m_insertPosition = 0;
         x.m_beginPosition = 0;
@@ -350,95 +347,17 @@ public:
      * @param list Initializer list.
      * @param alloc Allocator.
      */
-    ringbuffer(std::initializer_list<value_type> list,
-               const allocator_type& alloc = allocator_type()) :
-        m_allocator(alloc),
-        m_buffer(m_allocator.allocate(list.size())),
-        m_capacity(list.size()),
-        m_length(m_capacity),
+    ringbuffer(std::initializer_list<value_type> list) :
+        m_buffer(),
+        m_length(static_cast<size_type>(std::distance(list.begin(), list.end()))),
         m_insertPosition(0),
         m_beginPosition(0)
     {
-        auto buffer = m_buffer;
+        auto* pointer = m_buffer;
         for (auto&& el : list)
         {
-            m_allocator.construct(buffer, el);
-            ++buffer;
+            (*pointer++) = el;
         }
-    }
-
-    /**
-     * @brief Copy constructor.
-     * @param ringbuffer Right hand one.
-     */
-    ringbuffer(const ringbuffer& ringbuffer) :
-        m_allocator(ringbuffer.m_allocator),
-        m_buffer(m_allocator.allocate(ringbuffer.capacity())),
-        m_capacity(ringbuffer.m_capacity),
-        m_length(ringbuffer.m_length),
-        m_insertPosition(ringbuffer.m_insertPosition),
-        m_beginPosition(ringbuffer.m_beginPosition)
-    {
-        for (size_type i = 0; i < ringbuffer.size(); ++i)
-        {
-            size_type rounded_i = inc_index(m_beginPosition, i);
-
-            m_allocator.construct(&m_buffer[rounded_i], ringbuffer.m_buffer[rounded_i]);
-        }
-    }
-
-    /**
-     * @brief Destructor.
-     */
-    ~ringbuffer()
-    {
-        if (m_buffer)
-        {
-            // Destroying elements
-            for (size_type i = 0; i < size(); ++i)
-            {
-                m_allocator.destroy(&m_buffer[m_beginPosition + i]);
-            }
-
-            // Deallocating buffer
-            m_allocator.deallocate(m_buffer, m_capacity);
-        }
-    }
-
-    /**
-     * @brief Copy operator.
-     * @param rhs Right hand one.
-     * @return Reference to this ring buffer.
-     */
-    ringbuffer& operator=(const ringbuffer& rhs)
-    {
-        if (m_buffer)
-        {
-            // Destroying elements
-            for (size_type i = 0; i < size(); ++i)
-            {
-                m_allocator.destroy(&m_buffer[m_beginPosition + i]);
-            }
-
-            // Deallocating buffer
-            m_allocator.deallocate(m_buffer, m_capacity);
-        }
-
-        m_allocator = rhs.m_allocator;
-        m_buffer = m_allocator.allocate(rhs.m_capacity);
-        m_capacity = rhs.m_capacity;
-        m_length = rhs.m_length;
-        m_insertPosition = rhs.m_insertPosition;
-        m_beginPosition = rhs.m_beginPosition;
-
-        for (size_type i = 0; i < rhs.size(); ++i)
-        {
-            size_type rounded_i = inc_index(m_beginPosition, i);
-
-            m_allocator.construct(&m_buffer[rounded_i], rhs.m_buffer[rounded_i]);
-        }
-
-        return (*this);
     }
 
     /**
@@ -450,7 +369,6 @@ public:
     {
         return iterator(m_buffer,
                         m_beginPosition,
-                        m_capacity,
                         0);
     }
 
@@ -471,9 +389,8 @@ public:
      */
     const_iterator cbegin() const
     {
-        return const_iterator(m_buffer,
+        return const_iterator(const_cast<T*>(m_buffer),
                               m_beginPosition,
-                              m_capacity,
                               0);
     }
 
@@ -484,14 +401,13 @@ public:
      */
     iterator end()
     {
-        if (m_capacity == 0)
+        if (Size == 0)
         {
-            return iterator(nullptr, 0, 0, 0);
+            return iterator(nullptr, 0, 0);
         }
 
         return iterator(m_buffer,
-                        m_insertPosition % m_capacity,
-                        m_capacity,
+                        m_insertPosition % Size,
                         m_length);
     }
 
@@ -512,9 +428,8 @@ public:
      */
     const_iterator cend() const
     {
-        return const_iterator(m_buffer,
+        return const_iterator(const_cast<T*>(m_buffer),
                               m_insertPosition,
-                              m_capacity,
                               m_length);
     }
 
@@ -595,93 +510,12 @@ public:
      */
     size_type max_size() const
     {
-        return std::numeric_limits<size_type>::max() / sizeof(T);
+        return Size;
     }
 
     bool empty() const
     {
         return m_length == 0;
-    }
-
-    /**
-     * @brief Method for resising content in buffer.
-     * If n is bigger than capacity value, then
-     * reallocation will happen.
-     * @param n New size.
-     * @param val Replace value.
-     */
-    void resize(size_type n, value_type val = value_type())
-    {
-        if (n > m_capacity)
-        {
-            auto newBuffer = m_allocator.allocate(n);
-
-            size_type i = 0;
-            for (auto&& el : *this)
-            {
-                m_allocator.construct(&newBuffer[i++], el);
-            }
-
-            // Deleting elements
-            if (m_buffer)
-            {
-                // Destroying elements
-                for (size_type j = 0; j < size(); ++j)
-                {
-                    m_allocator.destroy(&m_buffer[m_beginPosition + j]);
-                }
-
-                // Deallocating buffer
-                m_allocator.deallocate(m_buffer, m_capacity);
-            }
-
-            m_buffer = newBuffer;
-            m_capacity = n;
-            m_insertPosition = m_length;
-            m_beginPosition = 0;
-        }
-
-        for (size_type i = m_length; i < n; ++i)
-        {
-            m_allocator.construct(&m_buffer[m_insertPosition], val);
-            m_insertPosition = inc_index(m_insertPosition);
-        }
-
-        m_length = n;
-    }
-
-    size_type capacity() const
-    {
-        return m_capacity;
-    }
-
-    void reserve(size_type n)
-    {
-        auto newBuffer = m_allocator.allocate(n);
-
-        size_type i = 0;
-        for (auto&& el : *this)
-        {
-            m_allocator.construct(&newBuffer[i++], el);
-        }
-
-        // Deleting elements
-        if (m_buffer)
-        {
-            // Destroying elements
-            for (size_type j = 0; j < size(); ++j)
-            {
-                m_allocator.destroy(&m_buffer[m_beginPosition + j]);
-            }
-
-            // Deallocating buffer
-            m_allocator.deallocate(m_buffer, m_capacity);
-        }
-
-        m_buffer = newBuffer;
-        m_capacity = n;
-        m_beginPosition = 0;
-        m_insertPosition = 0;
     }
 
     reference front()
@@ -735,156 +569,6 @@ public:
     }
 
     /**
-     * @brief Range assign method.
-     * Modifying capacity accordingly.
-     * @tparam InputIterator Input iterator type.
-     * @param first First iterator.
-     * @param last Last iterator.
-     */
-    template<class InputIterator, typename = std::_RequireInputIter<InputIterator>>
-    void assign(InputIterator first, InputIterator last)
-    {
-        auto requiredElements = static_cast<size_type>(std::distance(first, last));
-
-        // Reallocation
-        if (requiredElements > m_capacity)
-        {
-            auto newBuffer = m_allocator.allocate(requiredElements);
-
-            // Deleting elements
-            if (m_buffer)
-            {
-                // Destroying elements
-                for (size_type j = 0; j < size(); ++j)
-                {
-                    m_allocator.destroy(&m_buffer[m_beginPosition + j]);
-                }
-
-                // Deallocating buffer
-                m_allocator.deallocate(m_buffer, m_capacity);
-            }
-
-            m_buffer = newBuffer;
-            m_capacity = static_cast<size_type>(requiredElements);
-        }
-        else
-        {
-            // Destroying elements
-            for (size_type j = 0; j < size(); ++j)
-            {
-                m_allocator.destroy(&m_buffer[m_beginPosition + j]);
-            }
-        }
-
-
-        for (size_type i = 0;
-             first != last;
-             ++first, ++i)
-        {
-            m_allocator.construct(&m_buffer[i], *first);
-        }
-
-        m_length = requiredElements;
-        m_insertPosition = inc_index(0, requiredElements);
-    }
-
-    /**
-     * @brief Fill assign method.
-     * @param n Number of elements.
-     * @param val Value to fill container with.
-     */
-    void assign(size_type n, const value_type& val)
-    {
-        // Reallocation
-        if (n > m_capacity)
-        {
-            auto newBuffer = m_allocator.allocate(n);
-
-            // Deleting elements
-            if (m_buffer)
-            {
-                // Destroying elements
-                for (size_type j = 0; j < size(); ++j)
-                {
-                    m_allocator.destroy(&m_buffer[m_beginPosition + j]);
-                }
-
-                // Deallocating buffer
-                m_allocator.deallocate(m_buffer, m_capacity);
-            }
-
-            m_buffer = newBuffer;
-            m_capacity = static_cast<size_type>(n);
-        }
-        else
-        {
-            // Destroying elements
-            for (size_type j = 0; j < size(); ++j)
-            {
-                m_allocator.destroy(&m_buffer[m_beginPosition + j]);
-            }
-        }
-
-
-        for (size_type i = 0;
-             i < n;
-             ++i)
-        {
-            m_allocator.construct(&m_buffer[i], val);
-        }
-
-        m_length = n;
-        m_insertPosition = inc_index(0, n);
-    }
-
-    /**
-     * @brief Initializer assign method.
-     * @param initializer_list Initializer list.
-     */
-    void assign(std::initializer_list<value_type> initializer_list)
-    {
-        // Reallocation
-        if (initializer_list.size() > m_capacity)
-        {
-            auto newBuffer = m_allocator.allocate(initializer_list.size());
-
-            // Deleting elements
-            if (m_buffer)
-            {
-                // Destroying elements
-                for (size_type j = 0; j < size(); ++j)
-                {
-                    m_allocator.destroy(&m_buffer[m_beginPosition + j]);
-                }
-
-                // Deallocating buffer
-                m_allocator.deallocate(m_buffer, m_capacity);
-            }
-
-            m_buffer = newBuffer;
-            m_capacity = static_cast<size_type>(initializer_list.size());
-        }
-        else
-        {
-            // Destroying elements
-            for (size_type j = 0; j < size(); ++j)
-            {
-                m_allocator.destroy(&m_buffer[m_beginPosition + j]);
-            }
-        }
-
-
-        std::size_t i = 0;
-        for (auto&& val : initializer_list)
-        {
-            m_allocator.construct(&m_buffer[i++], val);
-        }
-
-        m_length = initializer_list.size();
-        m_insertPosition = inc_index(0, initializer_list.size());
-    }
-
-    /**
      * @brief Method for pushing back element.
      * If not enough space left, std::overflow_error
      * exception will be thrown.
@@ -892,12 +576,12 @@ public:
      */
     void push_back(const value_type& value)
     {
-        if (m_length == m_capacity)
+        if (m_length == Size)
         {
             throw std::overflow_error("No space left in buffer.");
         }
 
-        m_allocator.construct(&m_buffer[m_insertPosition], value);
+        m_buffer[m_insertPosition] = value;
 
         m_insertPosition = inc_index(m_insertPosition);
         m_length++;
@@ -915,19 +599,18 @@ public:
 
         m_insertPosition = dec_index(m_insertPosition);
 
-        m_allocator.destroy(&m_buffer[m_insertPosition]);
         --m_length;
     }
 
     template<typename... Args>
     void emplace_back(Args&&... args)
     {
-        if (m_length == m_capacity)
+        if (m_length == Size)
         {
             throw std::overflow_error("No space left in buffer.");
         }
 
-        m_allocator.construct(&m_buffer[m_insertPosition], args...);
+        m_buffer[m_insertPosition] = T(args...);
 
         m_insertPosition = inc_index(m_insertPosition);
         m_length++;
@@ -943,7 +626,7 @@ public:
             throw std::overflow_error("There is no elements.");
         }
 
-        m_allocator.destroy(&m_buffer[m_beginPosition]);
+//        m_allocator.destroy(&m_buffer[m_beginPosition]);
 
         m_beginPosition = inc_index(m_beginPosition);
         --m_length;
@@ -959,11 +642,6 @@ public:
             throw std::overflow_error("Not enough elements.");
         }
 
-        for (size_type i = 0; i < count; ++i)
-        {
-            m_allocator.destroy(&m_buffer[inc_index(m_beginPosition, i)]);
-        }
-
         m_beginPosition = inc_index(m_beginPosition, count);
         m_length -= count;
     }
@@ -975,74 +653,24 @@ public:
     void clear()
     {
         // Destroying objects
-        for (size_type i = 0; i < m_length; ++i)
-        {
-            m_allocator.destroy(&m_buffer[inc_index(m_beginPosition, i)]);
-        }
 
         m_beginPosition = 0;
         m_insertPosition = 0;
         m_length = 0;
     }
 
-    /**
-     * @brief Observer for allocator.
-     * @return Allocator.
-     */
-    allocator_type get_allocator() const noexcept
-    {
-        return m_allocator;
-    }
-
-    /**
-     * @brief Method for removing one element.
-     * @param position Element position.
-     * @return
-     */
-    iterator erase(const_iterator position)
-    {
-        if (position.m_currentPos == 0)
-        {
-            pop_front();
-            return begin();
-        }
-
-        if (position.m_currentPos % m_length == m_length - 1)
-        {
-            pop_back();
-            return end();
-        }
-
-        // Erasing from middle
-        m_allocator.destroy(&m_buffer[position.m_currentPos]);
-
-        for (auto iterator = position,
-                  nextIterator = position + 1,
-                  endIterator = end();
-             nextIterator != endIterator;
-             ++iterator, ++nextIterator)
-        {
-            m_buffer[iterator.m_currentPos] = m_buffer[nextIterator.m_currentPos];
-        }
-
-        --m_length;
-        m_insertPosition = dec_index(m_insertPosition);
-
-        return begin() + position.m_traverseCount;
-    }
-
 private:
 
     size_type inc_index(const size_type& index, const size_type& n = 1) const
     {
-        return (index + n) % m_capacity;
+        return (index + n) % Size;
     }
 
     size_type dec_index(const size_type& index, const size_type& n = 1) const
     {
         if (n > index)
         {
-            return m_capacity - (n - index);
+            return Size - (n - index);
         }
         else
         {
@@ -1050,10 +678,7 @@ private:
         }
     }
 
-    allocator_type m_allocator;
-
-    value_type* m_buffer;
-    size_type m_capacity;
+    value_type m_buffer[Size];
     size_type m_length;
     size_type m_insertPosition;
     size_type m_beginPosition;
