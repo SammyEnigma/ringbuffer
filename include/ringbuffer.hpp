@@ -1,7 +1,3 @@
-//
-// Created by megaxela on 11/23/17.
-//
-
 #pragma once
 
 #include <cstdlib>
@@ -198,12 +194,7 @@ public:
         {
             iterator retval = *this;
 
-            for (size_type i = 0; i < value; ++i)
-            {
-                ++retval;
-            }
-
-            return retval;
+            return retval + value;
         }
 
         // todo: optimize this
@@ -211,12 +202,7 @@ public:
         {
             iterator retval = *this;
 
-            for (size_type i = 0; i < value; ++i)
-            {
-                --retval;
-            }
-
-            return retval;
+            return retval - value;
         }
 
         bool operator==(iterator other) const
@@ -319,6 +305,24 @@ public:
         {
             (*pointer++) = *first;
         }
+    }
+
+    ringbuffer& operator=(ringbuffer&& x) noexcept
+    {
+        m_length = std::move(x.m_length);
+        m_insertPosition = std::move(x.m_insertPosition);
+        m_beginPosition = std::move(x.m_beginPosition);
+
+        auto* pointer = m_buffer;
+
+        for (auto&& val : x.m_buffer)
+        {
+            (*pointer++) = std::move(val);
+        }
+
+        x.m_length = 0;
+        x.m_insertPosition = 0;
+        x.m_beginPosition = 0;
     }
 
     /**

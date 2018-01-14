@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 if (${STLROUNDBUFFER_BUILD_TESTS})
     add_subdirectory(tests)
+    add_subdirectory(benchmark)
 endif()
 
 add_library(STLRoundBuffer include/ringbuffer.hpp)
