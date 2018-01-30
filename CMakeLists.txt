@@ -11,4 +11,8 @@ endif()
 
 add_library(STLRoundBuffer include/ringbuffer.hpp)
 
+target_include_directories(STLRoundBuffer PUBLIC
+        include
+)
+
 set_target_properties(STLRoundBuffer PROPERTIES LINKER_LANGUAGE CXX)
