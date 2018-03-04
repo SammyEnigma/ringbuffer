@@ -180,7 +180,7 @@ public:
             return *this;
         }
 
-        iterator& operator--(int)
+        iterator operator--(int)
         {
             iterator retval = *this;
 
@@ -661,6 +661,38 @@ public:
         m_beginPosition = 0;
         m_insertPosition = 0;
         m_length = 0;
+    }
+
+    iterator erase(const_iterator position)
+    {
+        if (position.m_currentPos == 0)
+        {
+            pop_front();
+            return begin();
+        }
+
+        if (position.m_currentPos % m_length == m_length - 1)
+        {
+            pop_back();
+            return end();
+        }
+
+        // Erasing from middle
+        m_buffer[position.m_currentPos] = value_type();
+
+        for (auto iterator = position,
+                 nextIterator = position + 1,
+                 endIterator = end();
+             nextIterator != endIterator;
+             ++iterator, ++nextIterator)
+        {
+            m_buffer[iterator.m_currentPos] = m_buffer[nextIterator.m_currentPos];
+        }
+
+        --m_length;
+        m_insertPosition = dec_index(m_insertPosition);
+
+        return begin() + position.m_traverseCount;
     }
 
 private:
