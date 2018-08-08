@@ -7,7 +7,11 @@ include_directories(../include)
 include_directories(googletest/googletest/include)
 
 add_executable(STLRoundBufferTests
-        main.cpp
-        TestElementAccess.cpp TestingExtend.hpp TestIterators.cpp)
+    main.cpp
+    TestElementAccess.cpp
+    TestingExtend.hpp
+    TestIterators.cpp
+    TestMainFunctional.cpp
+)
 
 target_link_libraries(STLRoundBufferTests STLRoundBuffer gtest)

@@ -574,21 +574,19 @@ public:
 
     /**
      * @brief Method for pushing back element.
-     * If not enough space left, std::overflow_error
-     * exception will be thrown.
+     * If not enough space left, elements will be overwritten.
      * @param value Value.
      */
     void push_back(const value_type& value)
     {
-        if (m_length == Size)
-        {
-            throw std::overflow_error("No space left in buffer.");
-        }
-
         m_buffer[m_insertPosition] = value;
 
         m_insertPosition = inc_index(m_insertPosition);
-        m_length++;
+
+        if (m_length < Size)
+        {
+            m_length++;
+        }
     }
 
     /**
@@ -609,15 +607,14 @@ public:
     template<typename... Args>
     void emplace_back(Args&&... args)
     {
-        if (m_length == Size)
-        {
-            throw std::overflow_error("No space left in buffer.");
-        }
-
         m_buffer[m_insertPosition] = T(args...);
 
         m_insertPosition = inc_index(m_insertPosition);
-        m_length++;
+
+        if (m_length < Size)
+        {
+            m_length++;
+        }
     }
 
     /**
