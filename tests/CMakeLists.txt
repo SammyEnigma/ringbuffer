@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.5)
-project(STLRoundBufferTests)
+project(ringbuffer_tests)
 
 add_subdirectory(googletest)
 
 include_directories(../include)
 include_directories(googletest/googletest/include)
 
-add_executable(STLRoundBufferTests
+add_executable(ringbuffer_tests
     main.cpp
     TestElementAccess.cpp
     TestingExtend.hpp
@@ -14,4 +14,4 @@ add_executable(STLRoundBufferTests
     TestMainFunctional.cpp
 )
 
-target_link_libraries(STLRoundBufferTests STLRoundBuffer gtest)
+target_link_libraries(ringbuffer_tests ringbuffer gtest)
