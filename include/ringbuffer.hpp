@@ -293,7 +293,7 @@ public:
      * @param last End iterator.
      * @param alloc Allocator.
      */
-    template<typename InputIterator, typename = std::_RequireInputIter<InputIterator>>
+    template<typename InputIterator>
      ringbuffer(InputIterator first,
                 InputIterator last) :
         m_buffer(),
